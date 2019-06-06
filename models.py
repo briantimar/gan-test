@@ -33,4 +33,26 @@ class Generator(nn.Module):
 
 class Discriminator(nn.Module):
     """ Discrimator for the GAN"""
-    pass
+    
+    def __init__(self, input_dimension):
+        super().__init__()
+        self.input_dimension = input_dimension
+        self.intermediate_size = 10
+        self.num_hidden_layers = 2
+        self.activation = nn.ReLU
+        self.layers = [nn.Linear(self.input_dimension, self.intermediate_size ), 
+                        self.activation()]
+        for __ in range(self.num_hidden_layers-1):
+            self.layers += [nn.Linear(self.intermediate_size, self.intermediate_size), self.activation()]
+        self.layers.append(nn.Linear(self.intermediate_size, 1))
+        for i in range(self.num_hidden_layers+1):
+            self.add_module("linear%d"%i, self.layers[2*i])
+            if i < self.num_hidden_layers:
+                self.add_module("activation%d"%i, self.layers[2*i+1])
+        
+    def forward(self,x):
+        for l in self.layers:
+            x = l(x) 
+        return x
+
+        
