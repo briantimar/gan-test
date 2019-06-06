@@ -55,21 +55,21 @@ class Discriminator(nn.Module):
         return x
 
 
-def do_training_step(x, z, G, D, G_optimizer, D_optimizer):
+def do_training_step(x, G, D, G_optimizer, D_optimizer):
     """ Run a single GAN training step.
         x = a batch of real training data
         z = a batch of noise vectors (same size) to be fed to the generator
         Returns: disc_loss, gen_loss"""
 
+    z = torch.randn(x.size(0), G.noise_dimension)
     #fake data
-    xg = G(z)
-    disc_loss = (-D(x).log() - (1 - D(xg)).log()).mean()
+    disc_loss = (-D(x).log() - (1 - D(G(z))).log()).mean()
     
     D.zero_grad()
     disc_loss.backward()
     D_optimizer.step()
 
-    gen_loss = - (D(xg).log()).mean()
+    gen_loss = - (D(G(z)).log()).mean()
     G.zero_grad()
     gen_loss.backward()
     G_optimizer.step()
