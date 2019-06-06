@@ -44,15 +44,32 @@ class Discriminator(nn.Module):
                         self.activation()]
         for __ in range(self.num_hidden_layers-1):
             self.layers += [nn.Linear(self.intermediate_size, self.intermediate_size), self.activation()]
-        self.layers.append(nn.Linear(self.intermediate_size, 1))
+        self.layers += [nn.Linear(self.intermediate_size, 1), nn.Sigmoid()]
         for i in range(self.num_hidden_layers+1):
             self.add_module("linear%d"%i, self.layers[2*i])
-            if i < self.num_hidden_layers:
-                self.add_module("activation%d"%i, self.layers[2*i+1])
+            self.add_module("activation%d"%i, self.layers[2*i+1])
         
     def forward(self,x):
         for l in self.layers:
             x = l(x) 
         return x
 
-        
+
+def do_training_step(x, z, G, D, G_optimizer, D_optimizer):
+    """ Run a single GAN training step."""
+
+    #fake data
+    xg = G(z)
+    disc_loss = -D(x).log() - (1 - D(xg)).log()
+    
+    D.zero_grad()
+    disc_loss.backward()
+    D_optimizer.step()
+
+    gen_loss = - D(xg).log()
+    G.zero_grad()
+    gen_loss.backward()
+    G_optimizer.step()
+
+
+
