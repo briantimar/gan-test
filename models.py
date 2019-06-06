@@ -18,8 +18,12 @@ class Generator(nn.Module):
                         self.activation()]
         for __ in range(self.num_hidden_layers-1):
             self.layers += [nn.Linear(self.intermediate_size, self.intermediate_size), self.activation()]
-        self.layers += [nn.Linear(self.intermediate_size, self.output_dimension)
+        self.layers += [nn.Linear(self.intermediate_size, self.output_dimension), 
+                        nn.LeakyReLU(negative_slope=.5)
                         ]
+        for i in range(self.num_hidden_layers+1):
+            self.add_module("linear%d"%i, self.layers[2*i])
+            self.add_module("activation%d"%i, self.layers[2*i+1])
         
     def forward(self, x):
         for l in self.layers:
