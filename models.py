@@ -6,18 +6,20 @@ class Generator(nn.Module):
     """ A GAN generator. 
         Takes noise vectors as input, returns "image" vectors. """
 
-    def __init__(self, noise_dimension, output_dimension):
+    def __init__(self, noise_dimension, output_dimension,num_hidden_layers=2):
         super().__init__()
         self.noise_dimension = noise_dimension
         self.output_dimension = output_dimension
 
         self.intermediate_size = 10
-        self.num_hidden_layers = 2
-        self.activation = nn.ReLU
+        self.num_hidden_layers = num_hidden_layers
+        def get_activation():
+            return nn.LeakyReLU(negative_slope=.1)
+
         self.layers = [ nn.Linear(self.noise_dimension, self.intermediate_size), 
-                        self.activation()]
+                        get_activation()]
         for __ in range(self.num_hidden_layers-1):
-            self.layers += [nn.Linear(self.intermediate_size, self.intermediate_size), self.activation()]
+            self.layers += [nn.Linear(self.intermediate_size, self.intermediate_size), get_activation()]
         self.layers += [nn.Linear(self.intermediate_size, self.output_dimension), 
                         nn.LeakyReLU(negative_slope=.5)
                         ]
@@ -34,11 +36,11 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     """ Discrimator for the GAN"""
     
-    def __init__(self, input_dimension):
+    def __init__(self, input_dimension, num_hidden_layers=2):
         super().__init__()
         self.input_dimension = input_dimension
         self.intermediate_size = 10
-        self.num_hidden_layers = 2
+        self.num_hidden_layers = num_hidden_layers
         self.activation = nn.ReLU
         self.layers = [nn.Linear(self.input_dimension, self.intermediate_size ), 
                         self.activation()]
@@ -54,27 +56,6 @@ class Discriminator(nn.Module):
             x = l(x) 
         return x
 
-
-def do_training_step(x, G, D, G_optimizer, D_optimizer):
-    """ Run a single GAN training step.
-        x = a batch of real training data
-        z = a batch of noise vectors (same size) to be fed to the generator
-        Returns: disc_loss, gen_loss"""
-
-    z = torch.randn(x.size(0), G.noise_dimension)
-    #fake data
-    disc_loss = (-D(x).log() - (1 - D(G(z))).log()).mean()
-    
-    D.zero_grad()
-    disc_loss.backward()
-    D_optimizer.step()
-
-    gen_loss = - (D(G(z)).log()).mean()
-    G.zero_grad()
-    gen_loss.backward()
-    G_optimizer.step()
-
-    return disc_loss, gen_loss
 
 
 
